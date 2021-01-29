@@ -1,0 +1,35 @@
+---
+
+# For possible values see https://docs.ansible.com/ansible/latest/collections/ansible/builtin/user_module.html
+# All options are mirrored, except ssh_* options
+# users_list:
+#   username:
+#       group:
+#       groups:
+#       append:
+#       shell:
+#       password:
+#       comment:
+#       uid:
+#       home:
+#       create_home:
+#       update_password:
+#       system:
+#       force:
+#       remove:
+#       ssh_follow: bool (yes|no)
+#       ssh_keys: []
+#       servers: [] # used for deploy user only for specified server groups
+
+# groups_list:
+#   groupname1:
+#     gid:
+#     state:
+#   groupname2:
+#     gid:
+#     state:
+
+# you can use this to add additional users for one host or group of hosts
+# users_patch:
+#   someuser:
+#     ssh_keys:

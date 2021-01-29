@@ -1,0 +1,22 @@
+---
+# servers idea from https://github.com/ryandaniels/ansible-role-create-users
+
+- name: update users_list if users_patch defined for host
+  set_fact:
+    users_list: "{{ users_list | combine(users_patch, recursive=True, list_merge='append') }}"
+  when: users_patch is defined
+
+- name: "create or delete groups"
+  group:
+    gid: "{{ item.value.gid | default(omit) }}"
+    name: "{{ item.key }}"
+    state: "{{ item.value.state | default(omit) }}"
+  loop: "{{ groups_list | dict2items }}"
+
+- name: "create or update users"
+  include_tasks: users.yml
+  loop: "{{ users_list | dict2items }}"
+  loop_control:
+    loop_var: item_user
+  when: (item_user.value.servers in group_names if item_user.value.servers is defined) or
+        item_user.value.servers is not defined
