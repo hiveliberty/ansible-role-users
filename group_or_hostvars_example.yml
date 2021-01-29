@@ -1,5 +1,7 @@
 ---
 
+# I will try to write a better readme and examples later :)
+
 # For possible values see https://docs.ansible.com/ansible/latest/collections/ansible/builtin/user_module.html
 # All options are mirrored, except ssh_* options
 # users_list:
