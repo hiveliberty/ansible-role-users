@@ -1,24 +1,35 @@
 ---
 # servers idea from https://github.com/ryandaniels/ansible-role-create-users
 
-- name: update users_list if users_patch defined for host
+- name: "Update users_list if users_patch defined for host"
   set_fact:
     users_list: "{{ users_list | combine(users_patch, recursive=True, list_merge='append') }}"
   when:
     - users_list is defined
     - users_patch is defined
 
-- name: "create or delete groups"
-  group:
+- name: Install sudo package
+  ansible.builtin.package:
+    name: sudo
+    update_cache: yes
+    cache_valid_time: 3600
+    state: present
+  tags: [users]
+
+- name: Create/Delete groups
+  ansible.builtin.group:
     gid: "{{ item.value.gid | default(omit) }}"
     name: "{{ item.key }}"
     state: "{{ item.value.state | default(omit) }}"
   loop: "{{ (groups_list | default ({})) | dict2items }}"
+  tags: [users]
 
-- name: "create or update users"
-  include_tasks: users.yml
+- name: Include create/update users tasks
+  include_tasks: user.yml
   loop: "{{ (users_list | default ({})) | dict2items }}"
   loop_control:
     loop_var: item_user
-  when: (item_user.value.servers in group_names if item_user.value.servers is defined) or
+    label: "{{ item_user.key }}"
+  when: (item_user.value.servers | intersect(group_names) | length > 0 if item_user.value.servers is defined) or
         item_user.value.servers is not defined
+  tags: [users]

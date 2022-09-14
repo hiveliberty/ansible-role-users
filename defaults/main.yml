@@ -1,0 +1,5 @@
+---
+
+users_default_shell: /bin/bash
+users_default_remove: no
+users_default_force: no
