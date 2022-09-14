@@ -1,0 +1,83 @@
+---
+
+- block:
+  - name: "creat primary user group for '{{ item_user.key }}'"
+    ansible.builtin.group:
+      name: "{{ item_user.key }}"
+      gid: "{{ item_user.value.gid | default(item_user.value.uid) | default(omit) }}"
+    when: item_user.key != 'root'
+    tags: [users]
+
+  - name: "create/update user '{{ item_user.key }}'"
+    ansible.builtin.user:
+      name: "{{ item_user.key }}"
+      group: "{{ item_user.value.group | default(item_user.key) }}"
+      # next line: empty string removes user from all secondary groups
+      groups: "{{ item_user.value.groups | join(',') if 'groups' in item_user.value else '' }}"
+      append: "{{ item_user.value.append | default(omit) }}"
+      shell: "{{ item_user.value.shell | default(users_default_shell) | default(omit) }}"
+      password: "{{ item_user.value.password if item_user.value.password is defined else '!' }}"
+      comment: "{{ item_user.value.comment | default(omit) }}"
+      uid: "{{ item_user.value.uid | default(omit) }}"
+      home: "{{ item_user.value.home | default(omit) }}"
+      create_home: "{{ 'no' if item_user.key == 'root' else item_user.value.create_home | default(omit) }}"
+      update_password: "{{ item_user.value.update_password | default(omit) }}"
+      system: "{{ item_user.value.system | default(omit) }}"
+    tags: [users]
+
+  - name: "update SSH public keys for user '{{ item_user.key }}'"
+    ansible.posix.authorized_key:
+    # authorized_key:
+      user: "{{ item_user.key }}"
+      key: "{{ (item_user.value.ssh_keys | join('\n')) if item_user.value.ssh_keys is defined else '' }}"
+      follow: "{{ item_user.value.ssh_keys_follow | default(omit) }}"
+      state: present
+      exclusive: yes
+    ignore_errors: "{{ ansible_check_mode }}"
+  when: item_user.value.state is not defined or
+        item_user.value.state == 'present'
+  tags: [users]
+
+- block:
+  - name: "remove user '{{ item_user.key }}'"
+    ansible.builtin.user:
+      name: "{{ item_user.key }}"
+      state: absent
+      remove: "{{ item_user.value.remove | default(users_default_remove) | default(omit) }}"
+      force: "{{ item_user.value.force | default(users_default_force) | default(omit) }}"
+    tags: [users]
+
+  - name: "delete primary user group for '{{ item_user.key }}'"
+    ansible.builtin.group:
+      name: "{{ item_user.key }}"
+      state: absent
+    tags: [users]
+  when:
+    - item_user.key != 'root'
+    - item_user.value.state is defined
+    - item_user.value.state == 'absent'
+  tags: [users]
+
+- name: "copy config to sudoers.d for '{{ item_user.key }}'"
+  ansible.builtin.template:
+    src: sudo_nopasswd.j2
+    dest: "/etc/sudoers.d/{{ item_user.key | replace('.', '') }}"
+    owner: root
+    group: root
+    mode: 0440
+    validate: visudo -cf %s
+  when:
+    - item_user.key != 'root'
+    - item_user.value.sudo_nopassword is defined
+    - item_user.value.sudo_nopassword | bool
+  tags: [users]
+
+- name: "delete config from sudoers.d for '{{ item_user.key }}'"
+  ansible.builtin.file:
+    dest: "/etc/sudoers.d/{{ item_user.key | replace('.', '') }}"
+    state: absent
+  when:
+    - item_user.key != 'root'
+    - item_user.value.sudo_nopassword is defined and not item_user.value.sudo_nopassword or
+      item_user.value.sudo_nopassword is not defined
+  tags: [users]
