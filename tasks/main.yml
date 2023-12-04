@@ -1,14 +1,21 @@
 ---
 # servers idea from https://github.com/ryandaniels/ansible-role-create-users
 
-- name: "Update users_list if users_patch defined for host"
-  set_fact:
+- name: "Update users_list if users_patch defined for {{ inventory_hostname }}"
+  ansible.builtin.set_fact:
     users_list: "{{ users_list | combine(users_patch, recursive=True, list_merge='append') }}"
   when:
     - users_list is defined
     - users_patch is defined
+  tags: [users]
 
-- name: Install sudo package
+- name: "Show patched users_list"
+  ansible.builtin.debug:
+    var: users_list
+  when: debug is defined and debug | bool
+  tags: [users]
+
+- name: "Install sudo package"
   ansible.builtin.package:
     name: sudo
     update_cache: yes
@@ -16,20 +23,26 @@
     state: present
   tags: [users]
 
-- name: Create/Delete groups
+- name: "Include update tasks for user 'root'"
+  ansible.builtin.include_tasks: update_root.yml
+  tags: [users]
+
+- name: "Create or Delete groups"
   ansible.builtin.group:
     gid: "{{ item.value.gid | default(omit) }}"
     name: "{{ item.key }}"
     state: "{{ item.value.state | default(omit) }}"
-  loop: "{{ (groups_list | default ({})) | dict2items }}"
+  loop: "{{ (groups_list | default({})) | dict2items }}"
   tags: [users]
 
-- name: Include create/update users tasks
-  include_tasks: user.yml
-  loop: "{{ (users_list | default ({})) | dict2items }}"
+- name: "Include users tasks"
+  ansible.builtin.include_tasks: user.yml
+  loop: "{{ (users_list | default({})) | dict2items }}"
   loop_control:
     loop_var: item_user
     label: "{{ item_user.key }}"
-  when: (item_user.value.servers | intersect(group_names) | length > 0 if item_user.value.servers is defined) or
-        item_user.value.servers is not defined
+  when:
+    - (item_user.value.servers | intersect(group_names) | length > 0 if item_user.value.servers is defined) or
+      item_user.value.servers is not defined
+    - item_user.key != 'root'
   tags: [users]

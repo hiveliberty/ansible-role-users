@@ -1,0 +1,11 @@
+---
+
+- name: "Update SSH public keys for user '{{ _user_name }}'"
+  ansible.posix.authorized_key:
+    user: "{{ _user_name }}"
+    key: "{{ (_user_item.ssh_keys | join('\n')) if _user_item.ssh_keys is defined else '' }}"
+    follow: "{{ _user_item.ssh_keys_follow | default(omit) }}"
+    state: present
+    exclusive: yes
+  ignore_errors: "{{ ansible_check_mode }}"
+  tags: [users]
