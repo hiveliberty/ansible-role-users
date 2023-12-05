@@ -1,9 +1,16 @@
 ---
 
+users_root: {}
 users_list: {}
 users_patch: {}
 groups_list: {}
 
 users_default_shell: /bin/bash
-users_default_remove: no
-users_default_force: no
+users_default_home: /home
+users_default_system_home: /nonexistent
+users_default_skel_path: /etc/skel
+users_default_remove: false
+users_default_force: false
+
+users_zfs_home: false
+users_zfs_home_dataset: "rpool/home"

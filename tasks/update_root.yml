@@ -1,0 +1,23 @@
+---
+- name: "Update password for user 'root'"
+  ansible.builtin.user:
+    name: "root"
+    password: "{{ users_root.password if users_root.password is defined else '!' }}"
+  tags: [users]
+
+- name: "Include update SSH public keys tasks for user 'root'"
+  ansible.builtin.include_tasks: update_ssh_keys.yml
+  vars:
+    _user_name: "root"
+    _user_item: "{{ users_root }}"
+  when: users_root.ssh_keys is defined
+  tags: [users]
+
+# - name: "Update SSH public keys for 'root' user"
+#   ansible.posix.authorized_key:
+#     user: "root"
+#     key: "{{ (users_root.ssh_keys | join('\n')) if users_root.ssh_keys is defined else '' }}"
+#     follow: "{{ users_root.ssh_keys_follow | default(omit) }}"
+#     state: present
+#     exclusive: yes
+#   tags: [users]

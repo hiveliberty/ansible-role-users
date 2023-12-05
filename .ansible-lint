@@ -1,0 +1,9 @@
+use_default_rules: true
+offline: true
+exclude_paths:
+  - .cache/
+
+skip_list:
+  - name[template]
+  - role-name[path]
+  - yaml
